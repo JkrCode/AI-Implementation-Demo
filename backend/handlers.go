@@ -23,10 +23,26 @@ func getAiResponseHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("endpoint hit")
 	
-    answer, err := queryOllama(question)
+    answer,pid ,err := queryOllama(question)
     if err != nil {
         fmt.Fprintln(w, "Error querying Ollama:", err)
         return
     }
-    fmt.Fprintln(w, "Ollama response:", answer)
+	pString := ""
+	if pid==2{
+		response, err := http.Get("http://localhost:3033")
+		if err != nil {
+			return 
+		}
+		defer response.Body.Close()
+
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return 
+		}
+		responseString := string(body)
+
+		pString = pString + responseString
+	}
+    fmt.Fprintln(w, answer + " " + pString)
 }
