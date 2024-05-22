@@ -6,6 +6,11 @@ import (
 	"io"
 	"net/http"
 )
+type llamaResponse struct{
+	pid int;
+	humanAnswer string;
+	tags []string
+}
 
 func getAiResponseHandler(w http.ResponseWriter, r *http.Request) {
     promptBuffer, err := io.ReadAll(r.Body)
@@ -23,13 +28,14 @@ func getAiResponseHandler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("endpoint hit")
 	
-    answer,pid ,err := queryOllama(question)
+    aiResponse ,err := queryOllama(question)
     if err != nil {
         fmt.Fprintln(w, "Error querying Ollama:", err)
         return
     }
 	pString := ""
-	if pid==2{
+
+	if aiResponse.pid==2{
 		response, err := http.Get("http://localhost:3033")
 		if err != nil {
 			return 
@@ -44,5 +50,22 @@ func getAiResponseHandler(w http.ResponseWriter, r *http.Request) {
 
 		pString = pString + responseString
 	}
-    fmt.Fprintln(w, answer + " " + pString)
+	if aiResponse.pid==1{
+		response, err := http.Get("http://localhost:3033/getPathsByTag?tag="+aiResponse.tags[0])
+		if err != nil {
+			return 
+		}
+		defer response.Body.Close()
+
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return 
+		}
+		responseString := string(body)
+
+		pString = pString + responseString
+	}
+
+
+    fmt.Fprintln(w, aiResponse.humanAnswer + " " + pString)
 }
